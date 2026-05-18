@@ -5,6 +5,8 @@ import torch
 import transformers  # noqa: F401
 from diffusers import StableDiffusionPipeline
 from PIL import Image, ImageDraw, ImageFont
+from playwright.sync_api import Error as PlaywrightError
+from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 from playwright.sync_api import sync_playwright
 
 
@@ -21,6 +23,7 @@ def _click_first_available(page, selectors, timeout=6000):
 
 
 def _upload_image(page, image_path, timeout=20000):
+    """Upload an image in Instagram's desktop composer without user interaction."""
     upload_selector = "input[type='file']"
 
     try:
@@ -28,8 +31,11 @@ def _upload_image(page, image_path, timeout=20000):
         page.set_input_files(upload_selector, image_path)
         print("[POST] Uploaded image via direct file input")
         return
-    except Exception as direct_upload_error:
-        print(f"[POST] Direct file input upload unavailable, falling back to chooser: {direct_upload_error}")
+    except (PlaywrightError, PlaywrightTimeoutError) as direct_upload_error:
+        print(
+            "[POST] Direct file input upload unavailable "
+            f"({type(direct_upload_error).__name__}), falling back to chooser"
+        )
 
     with page.expect_file_chooser(timeout=timeout) as chooser_info:
         clicked_upload_trigger = _click_first_available(
@@ -45,7 +51,10 @@ def _upload_image(page, image_path, timeout=20000):
             timeout=10000,
         )
         if not clicked_upload_trigger:
-            raise RuntimeError("Upload trigger button was not found during file chooser fallback.")
+            raise RuntimeError(
+                "Upload trigger button was not found during file chooser fallback. "
+                "Tried desktop 'Select from computer' selectors."
+            )
     chooser_info.value.set_files(image_path)
     print("[POST] Uploaded image via file chooser fallback")
 
