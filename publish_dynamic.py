@@ -26,7 +26,7 @@ def ensure_debug_dir():
 def capture_debug_artifacts(page, stage, error=None):
     ensure_debug_dir()
     safe_stage = "".join(ch if ch.isalnum() or ch in "-_" else "-" for ch in stage).strip("-") or "unknown-stage"
-    stamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S-%f")
     prefix = os.path.join(DEBUG_DIR, f"{stamp}-{safe_stage}")
     screenshot_path = f"{prefix}.png"
     html_path = f"{prefix}.html"
@@ -140,7 +140,7 @@ def wait_for_publish_confirmation(page):
 
 
 def generate_ai_cozy_image(output_path):
-    """Generates a theme-specific image using 1 of 50 randomized cozy prompts."""
+    """Generates a theme-specific image using a randomized cozy prompt."""
     log_step("IMAGE", "Initializing AI Image Generator")
     cozy_prompts = [
         "A quiet cozy room corner, warm soft lighting, a beige armchair with a fluffy blanket, a hot steaming mug on a wooden side table, cinematic aesthetic, warm tones, high quality",

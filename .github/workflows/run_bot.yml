@@ -65,5 +65,4 @@ jobs:
           retention-days: 7
           path: |
             debug_artifacts/**
-            instagram-upload-failure.png
             generated_post.jpg
