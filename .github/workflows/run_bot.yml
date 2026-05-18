@@ -55,3 +55,15 @@ jobs:
           IG_PASSWORD: ${{ secrets.IG_PASSWORD }}
           HUGGINGFACE_TOKEN: ${{ secrets.HUGGINGFACE_TOKEN }}
         run: python publish_dynamic.py
+
+      - name: Upload debug artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: instagram-debug-artifacts-${{ github.run_id }}
+          if-no-files-found: warn
+          retention-days: 7
+          path: |
+            debug_artifacts/**
+            instagram-upload-failure.png
+            generated_post.jpg
