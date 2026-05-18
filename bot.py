@@ -20,12 +20,12 @@ def _click_first_available(page, selectors, timeout=6000):
     return False
 
 
-def _upload_image(page, absolute_image_path, timeout=20000):
+def _upload_image(page, image_path, timeout=20000):
     upload_selector = "input[type='file']"
 
     try:
         page.wait_for_selector(upload_selector, state="attached", timeout=timeout)
-        page.set_input_files(upload_selector, absolute_image_path)
+        page.set_input_files(upload_selector, image_path)
         print("[POST] Uploaded image via direct file input")
         return
     except Exception as direct_upload_error:
@@ -45,8 +45,8 @@ def _upload_image(page, absolute_image_path, timeout=20000):
             timeout=10000,
         )
         if not clicked_upload_trigger:
-            raise RuntimeError("Upload trigger button was not found.")
-    chooser_info.value.set_files(absolute_image_path)
+            raise RuntimeError("Upload trigger button was not found during file chooser fallback.")
+    chooser_info.value.set_files(image_path)
     print("[POST] Uploaded image via file chooser fallback")
 
 
