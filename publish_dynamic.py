@@ -12,6 +12,7 @@ USERNAME = os.environ.get("IG_USERNAME", "cozycorner4245")
 PASSWORD = os.environ.get("IG_PASSWORD")
 IMAGE_PATH = os.path.abspath("generated_post.jpg")
 FONT_PATH = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+HUGGINGFACE_TOKEN = os.environ.get("HUGGINGFACE_TOKEN")  # Added for authentication
 
 def generate_ai_cozy_image(output_path):
     """Generates a theme-specific image using 1 of 50 randomized cozy prompts."""
@@ -84,9 +85,13 @@ def generate_ai_cozy_image(output_path):
     selected_prompt = random.choice(cozy_prompts)
     print(f"AI Prompt Selected: {selected_prompt}")
 
-    # Load a free, fast AI text-to-image model
-    model_id = "OFA-Sys/small-stable-diffusion-v0-1" 
-    pipe = StableDiffusionPipeline.from_pretrained(model_id, torch_dtype=torch.float32)
+    # Load the Stable Diffusion model with authentication (the fix)
+    model_id = "OFA-Sys/small-stable-diffusion-v0-1"
+    pipe = StableDiffusionPipeline.from_pretrained(
+        model_id,
+        torch_dtype=torch.float32,
+        use_auth_token=HUGGINGFACE_TOKEN  # <-- this enables private/gated download
+    )
     
     # Generate the image
     print("AI is painting your cozy scene... (this takes roughly 60 seconds)")
