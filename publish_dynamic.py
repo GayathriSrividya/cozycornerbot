@@ -86,11 +86,10 @@ def generate_ai_cozy_image(output_path):
     print(f"AI Prompt Selected: {selected_prompt}")
 
     # Load the Stable Diffusion model with authentication (the fix)
-    model_id = "OFA-Sys/small-stable-diffusion-v0-1"
+    model_id = "runwayml/stable-diffusion-v1-5"
     pipe = StableDiffusionPipeline.from_pretrained(
         model_id,
-        torch_dtype=torch.float32,
-        use_auth_token=HUGGINGFACE_TOKEN  # <-- this enables private/gated download
+        torch_dtype=torch.float32
     )
     
     # Generate the image
