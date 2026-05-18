@@ -120,7 +120,7 @@ def generate_ai_cozy_image(output_path):
 
     print("[IMAGE] Loading Stable Diffusion model")
     pipe = StableDiffusionPipeline.from_pretrained(
-        "OFA-Sys/small-stable-diffusion-v0-1",
+        "runwayml/stable-diffusion-v1-5",
         torch_dtype=torch.float32,
     )
 
