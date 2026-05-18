@@ -26,7 +26,23 @@ jobs:
     - name: Install System Dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y fonts-dejavu-core libgbm-dev libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 libxkbcommon0 libxcomposite1 libxdamage1 libxext6 libxfixes3 libxrandr2 libpango-1.0-0 libcairo2 libasound2
+        sudo apt-get install -y \
+          fonts-dejavu-core \
+          libgbm-dev \
+          libnss3 \
+          libatk1.0-0 \
+          libatk-bridge2.0-0 \
+          libcups2 \
+          libdrm2 \
+          libxkbcommon0 \
+          libxcomposite1 \
+          libxdamage1 \
+          libxext6 \
+          libxfixes3 \
+          libxrandr2 \
+          libpango-1.0-0 \
+          libcairo2 \
+          libasound2
 
     # Step 4: Install all AI and browser automation tools via pip
     - name: Install AI and Browser Dependencies
