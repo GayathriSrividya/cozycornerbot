@@ -1,6 +1,6 @@
 import os
 import random
-from datetime import datetime
+from datetime import datetime, timezone
 
 import torch
 from diffusers import StableDiffusionPipeline
@@ -26,7 +26,7 @@ def ensure_debug_dir():
 def capture_debug_artifacts(page, stage, error=None):
     ensure_debug_dir()
     safe_stage = "".join(ch if ch.isalnum() or ch in "-_" else "-" for ch in stage).strip("-") or "unknown-stage"
-    stamp = datetime.utcnow().strftime("%Y%m%d-%H%M%S")
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
     prefix = os.path.join(DEBUG_DIR, f"{stamp}-{safe_stage}")
     screenshot_path = f"{prefix}.png"
     html_path = f"{prefix}.html"
@@ -47,7 +47,7 @@ def capture_debug_artifacts(page, stage, error=None):
 
     try:
         with open(context_path, "w", encoding="utf-8") as context_file:
-            context_file.write(f"timestamp_utc={datetime.utcnow().isoformat()}Z\n")
+            context_file.write(f"timestamp_utc={datetime.now(timezone.utc).isoformat()}\n")
             context_file.write(f"stage={stage}\n")
             context_file.write(f"url={page.url}\n")
             context_file.write(f"title={page.title()}\n")
@@ -208,16 +208,21 @@ def generate_ai_cozy_image(output_path):
     ai_image = pipe(selected_prompt, num_inference_steps=20, height=512, width=512).images[0]
     ai_image = ai_image.resize((1080, 1080), Image.Resampling.LANCZOS)
 
+    ai_image = ai_image.convert("RGBA")
+    overlay = Image.new("RGBA", ai_image.size, (0, 0, 0, 0))
+    overlay_draw = ImageDraw.Draw(overlay)
+    overlay_draw.rectangle([(0, 1020), (1080, 1080)], fill=(0, 0, 0, 80))
+    ai_image = Image.alpha_composite(ai_image, overlay)
+
     draw = ImageDraw.Draw(ai_image)
     try:
         font = ImageFont.truetype(FONT_PATH, 35)
     except IOError:
         font = ImageFont.load_default()
 
-    draw.rectangle([(0, 1020), (1080, 1080)], fill=(0, 0, 0, 80))
     draw.text((40, 1035), f"✨ @{USERNAME} | Your Daily Comfort", fill="#FFFFFF", font=font)
 
-    ai_image.save(output_path, quality=95)
+    ai_image.convert("RGB").save(output_path, quality=95)
     log_step("IMAGE", f"AI image saved successfully to {output_path}")
 
 
