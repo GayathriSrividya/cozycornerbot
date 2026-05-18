@@ -5,6 +5,8 @@ import torch
 import transformers  # noqa: F401
 from diffusers import StableDiffusionPipeline
 from PIL import Image, ImageDraw, ImageFont
+from playwright.sync_api import Error as PlaywrightError
+from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 from playwright.sync_api import sync_playwright
 
 
@@ -18,6 +20,44 @@ def _click_first_available(page, selectors, timeout=6000):
         except Exception:
             continue
     return False
+
+
+def _upload_image(page, image_path, timeout=20000):
+    """Upload an image in Instagram's desktop composer for headless automation."""
+    upload_selector = "input[type='file']"
+    chooser_selectors = [
+        "text=Select from computer",
+        "text=Select From Computer",
+        "button:has-text('Select from computer')",
+        "button:has-text('Select From Computer')",
+        "div[role='button']:has-text('Select from computer')",
+        "div[role='button']:has-text('Select From Computer')",
+    ]
+
+    try:
+        page.wait_for_selector(upload_selector, state="attached", timeout=timeout)
+        page.set_input_files(upload_selector, image_path)
+        print("[POST] Uploaded image via direct file input")
+        return
+    except (PlaywrightError, PlaywrightTimeoutError) as direct_upload_error:
+        print(
+            "[POST] Direct file input upload unavailable "
+            f"({type(direct_upload_error).__name__}), falling back to chooser"
+        )
+
+    with page.expect_file_chooser(timeout=timeout) as chooser_info:
+        clicked_upload_trigger = _click_first_available(
+            page,
+            chooser_selectors,
+            timeout=10000,
+        )
+        if not clicked_upload_trigger:
+            raise RuntimeError(
+                "Upload trigger button was not found during file chooser fallback. "
+                f"Tried selectors: {', '.join(chooser_selectors)}"
+            )
+    chooser_info.value.set_files(image_path)
+    print("[POST] Uploaded image via file chooser fallback")
 
 
 def generate_ai_cozy_image(output_path):
@@ -132,9 +172,8 @@ Your daily dose of warmth and calm.
 #cozycorner #aesthetic #cozyvibes #slowliving #hygge #minimalist #cozyathome #warmth #selfcare #peacefulspace #coffeetime #readingtime #cozyhome #interiordesign #homesweethome #coziness #neutralaesthetic #softlife #tranquil #mindfulness"""
 
     with sync_playwright() as p:
-        device = p.devices["iPhone 12 Pro"]
         browser = p.chromium.launch(headless=True)
-        context = browser.new_context(**device)
+        context = browser.new_context(viewport={"width": 1440, "height": 1080})
         page = context.new_page()
 
         try:
@@ -173,23 +212,8 @@ Your daily dose of warmth and calm.
             if not opened:
                 raise RuntimeError("Could not open the Instagram create post flow.")
 
-            print("[POST] Uploading image via file chooser")
-            with page.expect_file_chooser(timeout=20000) as chooser_info:
-                clicked_upload_trigger = _click_first_available(
-                    page,
-                    [
-                        "text=Select from computer",
-                        "text=Select From Computer",
-                        "button:has-text('Select from computer')",
-                        "button:has-text('Select From Computer')",
-                        "div[role='button']:has-text('Select from computer')",
-                        "div[role='button']:has-text('Select From Computer')",
-                    ],
-                    timeout=10000,
-                )
-                if not clicked_upload_trigger:
-                    raise RuntimeError("Upload trigger button was not found.")
-            chooser_info.value.set_files(absolute_image_path)
+            print("[POST] Uploading image")
+            _upload_image(page, absolute_image_path)
 
             print("[POST] Advancing through editor screens")
             for index in range(3):
