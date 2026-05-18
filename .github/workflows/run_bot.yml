@@ -1,68 +1,47 @@
-name: Run CozyCorner AI Bot
+name: CozyCornorBot - Daily AI Post
 
 on:
-  push:
-    branches:
-      - main
-  workflow_dispatch:
   schedule:
-    - cron: '0 0 * * *'
-    - cron: '0 2 * * *'
-    - cron: '0 4 * * *'
+    # 10 evenly spread cron triggers across daytime hours (UTC)
     - cron: '0 6 * * *'
-    - cron: '0 8 * * *'
+    - cron: '0 7 * * *'
+    - cron: '30 8 * * *'
     - cron: '0 10 * * *'
-    - cron: '0 12 * * *'
-    - cron: '0 14 * * *'
+    - cron: '30 11 * * *'
+    - cron: '0 13 * * *'
+    - cron: '30 14 * * *'
     - cron: '0 16 * * *'
-    - cron: '0 18 * * *'
+    - cron: '30 17 * * *'
+    - cron: '0 19 * * *'
+  workflow_dispatch:
 
-permissions:
-  contents: read
-
-concurrency:
-  group: cozycornerbot-run
-  cancel-in-progress: true
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  generate-and-publish-instagram-post:
+  post:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
-
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Python
+      - name: Set up Python 3.10
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
+      - name: Install system fonts
+        run: sudo apt-get install -y fonts-dejavu-core
+
       - name: Install Python dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install Pillow playwright diffusers transformers torch
+          pip install --upgrade pip
+          pip install diffusers transformers torch Pillow playwright accelerate
 
-      - name: Install Playwright browser and system dependencies
-        run: python -m playwright install --with-deps chromium
+      - name: Install Playwright Chromium with dependencies
+        run: playwright install chromium --with-deps
 
-      - name: Validate required files
-        run: test -f publish_dynamic.py
-
-      - name: Execute AI automation
+      - name: Run bot
         env:
-          IG_USERNAME: ${{ vars.IG_USERNAME || 'cozycorner4245' }}
           IG_PASSWORD: ${{ secrets.IG_PASSWORD }}
-          HUGGINGFACE_TOKEN: ${{ secrets.HUGGINGFACE_TOKEN }}
-        run: python publish_dynamic.py
-
-      - name: Upload debug artifacts
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: instagram-debug-artifacts-${{ github.run_id }}
-          if-no-files-found: warn
-          retention-days: 7
-          path: |
-            debug_artifacts/**
-            generated_post.jpg
+        run: python bot.py
