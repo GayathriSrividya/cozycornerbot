@@ -25,7 +25,7 @@ def _upload_image(page, absolute_image_path, timeout=20000):
 
     try:
         page.wait_for_selector(upload_selector, state="attached", timeout=timeout)
-        page.set_input_files(upload_selector, absolute_image_path, timeout=timeout)
+        page.set_input_files(upload_selector, absolute_image_path)
         print("[POST] Uploaded image via direct file input")
         return
     except Exception as direct_upload_error:
