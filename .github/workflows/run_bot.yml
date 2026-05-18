@@ -1,0 +1,43 @@
+name: Run CozyCorner AI Bot
+
+# This defines what events trigger the automation script
+on:
+  push:
+    branches: [ main ]  # Runs automatically every time you push code to the main branch
+  workflow_dispatch:     # Enables the manual "Run workflow" button inside GitHub Actions
+
+jobs:
+  ai-build-and-post:
+    runs-on: ubuntu-latest  # Fires up a clean Linux virtual machine on GitHub's servers
+    timeout-minutes: 20     # Safe stop limit so the script doesn't run endlessly if a browser hangs
+
+    steps:
+    # Step 1: Copy your repository files onto the virtual machine
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    # Step 2: Install Python environment on the runner
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    # Step 3: Install underlying Linux packages required by Chromium and Pillow Fonts
+    - name: Install System Dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y fonts-dejavu-core libgbm-dev libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 libxkbcommon0 libxcomposite1 libxdamage1 libxext6 libxfixes3 libxrandr2 libpango-1.0-0 libcairo2 libasound2
+
+    # Step 4: Install all AI and browser automation tools via pip
+    - name: Install AI and Browser Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install Pillow playwright diffusers transformers torch
+        playwright install chromium
+
+    # Step 5: Inject your credentials and execute the script to generate and post the image
+    - name: Execute AI Automation
+      env:
+        IG_USERNAME: "cozycorner4245"
+        IG_PASSWORD: ${{ secrets.IG_PASSWORD }}  # Pulls securely from your GitHub Repository Secrets
+      run: python publish_dynamic.py
