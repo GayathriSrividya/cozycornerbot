@@ -53,4 +53,5 @@ jobs:
         env:
           IG_USERNAME: ${{ vars.IG_USERNAME || 'cozycorner4245' }}
           IG_PASSWORD: ${{ secrets.IG_PASSWORD }}
+          HUGGINGFACE_TOKEN: ${{ secrets.HUGGINGFACE_TOKEN }}
         run: python publish_dynamic.py
