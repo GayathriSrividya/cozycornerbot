@@ -173,13 +173,30 @@ Your daily dose of warmth and calm.
 
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
-        context = browser.new_context(viewport={"width": 1440, "height": 1080})
+        context = browser.new_context(
+            viewport={"width": 1440, "height": 1080},
+            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+        )
         page = context.new_page()
 
         try:
             print("[POST] Navigating to login page")
             page.goto("https://www.instagram.com/accounts/login/", wait_until="domcontentloaded", timeout=60000)
-            page.wait_for_selector("input[name='username']", timeout=60000)
+
+            # Dismiss cookie/consent banners before waiting for the login form
+            for consent_text in ["Allow all cookies", "Allow essential and optional cookies", "Accept All", "Only allow essential cookies"]:
+                try:
+                    page.get_by_role("button", name=consent_text).first.click(timeout=5000)
+                    print(f"[POST] Dismissed consent banner: {consent_text}")
+                    break
+                except PlaywrightTimeoutError:
+                    continue
+
+            try:
+                page.wait_for_selector("input[name='username']", timeout=60000)
+            except PlaywrightTimeoutError:
+                page.screenshot(path="debug_login_page.png", full_page=True)
+                raise RuntimeError("Login form not found. Screenshot saved to debug_login_page.png")
 
             print("[POST] Filling credentials")
             page.fill("input[name='username']", username)
