@@ -23,8 +23,16 @@ def _click_first_available(page, selectors, timeout=6000):
 
 
 def _upload_image(page, image_path, timeout=20000):
-    """Upload an image in Instagram's desktop composer without user interaction."""
+    """Upload an image in Instagram's desktop composer for headless automation."""
     upload_selector = "input[type='file']"
+    chooser_selectors = [
+        "text=Select from computer",
+        "text=Select From Computer",
+        "button:has-text('Select from computer')",
+        "button:has-text('Select From Computer')",
+        "div[role='button']:has-text('Select from computer')",
+        "div[role='button']:has-text('Select From Computer')",
+    ]
 
     try:
         page.wait_for_selector(upload_selector, state="attached", timeout=timeout)
@@ -40,20 +48,13 @@ def _upload_image(page, image_path, timeout=20000):
     with page.expect_file_chooser(timeout=timeout) as chooser_info:
         clicked_upload_trigger = _click_first_available(
             page,
-            [
-                "text=Select from computer",
-                "text=Select From Computer",
-                "button:has-text('Select from computer')",
-                "button:has-text('Select From Computer')",
-                "div[role='button']:has-text('Select from computer')",
-                "div[role='button']:has-text('Select From Computer')",
-            ],
+            chooser_selectors,
             timeout=10000,
         )
         if not clicked_upload_trigger:
             raise RuntimeError(
                 "Upload trigger button was not found during file chooser fallback. "
-                "Tried desktop 'Select from computer' selectors."
+                f"Tried selectors: {', '.join(chooser_selectors)}"
             )
     chooser_info.value.set_files(image_path)
     print("[POST] Uploaded image via file chooser fallback")
