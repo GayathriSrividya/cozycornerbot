@@ -98,15 +98,36 @@ def set_upload_file(page, image_path_to_upload):
         log_step("UPLOAD", f"Direct file input not ready, falling back to chooser ({direct_exc})")
 
     try:
+        page.evaluate(
+            "() => { document.querySelectorAll('input[type=file]').forEach(el => {"
+            " el.style.display = 'block'; el.style.opacity = '1'; el.style.visibility = 'visible'; }); }"
+        )
+        file_input.set_files(image_path_to_upload, timeout=8000)
+        log_step("UPLOAD", "Uploaded file via unhidden input[type='file']")
+        return
+    except Exception as js_exc:
+        log_step("UPLOAD", f"JS-unhide file input fallback failed ({js_exc}), trying chooser")
+
+    chooser_selectors = [
+        "input[type='file']",
+        "[accept*='image'] ~ * button",
+        "text=Select from computer",
+        "text=Select From Computer",
+        "button:has-text('Select from computer')",
+        "button:has-text('Select From Computer')",
+        "div[role='button']:has-text('Select from computer')",
+        "div[role='button']:has-text('Select From Computer')",
+        "span:has-text('Select from computer')",
+        "span:has-text('Select From Computer')",
+        "[role='button']:has-text('computer')",
+        "button:has-text('computer')",
+    ]
+
+    try:
         with page.expect_file_chooser(timeout=10000) as chooser_info:
             clicked_selector = click_first_available(
                 page,
-                [
-                    "text=Select From Computer",
-                    "button:has-text('Select From Computer')",
-                    "div[role='button']:has-text('Select From Computer')",
-                    "text=Select from computer",
-                ],
+                chooser_selectors,
                 timeout=7000,
                 step_name="UPLOAD",
             )
@@ -242,9 +263,11 @@ def publish_post(image_path_to_upload):
     ensure_debug_dir()
 
     with sync_playwright() as p:
-        device = p.devices["iPhone 12 Pro"]
         browser = p.chromium.launch(headless=True)
-        context = browser.new_context(**device)
+        context = browser.new_context(
+            viewport={"width": 1280, "height": 900},
+            user_agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        )
         page = context.new_page()
         page.set_default_timeout(15000)
 
@@ -287,7 +310,11 @@ def publish_post(image_path_to_upload):
             if not composer_selector:
                 raise RuntimeError("Could not open Instagram post composer using available selectors.")
 
+            page.wait_for_timeout(3000)
+            capture_debug_artifacts(page, "after-composer-open")
+
             log_step("UPLOAD", "Selecting file for upload")
+            capture_debug_artifacts(page, "before-upload")
             set_upload_file(page, image_path_to_upload)
             page.wait_for_timeout(4000)
 
